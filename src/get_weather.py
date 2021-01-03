@@ -4,7 +4,9 @@ to get historic/current/forcast data for the barometric pressure and humidity.
 """
 
 from pyowm.owm import OWM
-
+import dateutil.parser
+import matplotlib.pyplot as plt
+import numpy as np
 
 def get_api_key(filepath):
     """Read a local file with your API key."""
@@ -30,11 +32,41 @@ class LocalWeather:
         self.owm = OWM(self.key)
         self.mgr = self.owm.weather_manager()
 
+    def _get_forecast(self):
+        """Get forecast weather as list of tuples."""
+        # Access the One-Call API forecast
+        one_call_forecast = self.mgr.one_call(self.lat, self.lon) 
+        hourly_weather = {(weather.reference_time('iso'), weather.pressure['press']) for weather in one_call_forecast.forecast_hourly}
+        daily_weather = {(weather.reference_time('iso'), weather.pressure['press']) for weather in one_call_forecast.forecast_daily}
+        return hourly_weather.union(daily_weather)
+    
+    def _get_history(self):
+        """Get the historic weather."""
+        # Access the One-Call API history
+        one_call_history = self.mgr.one_call_history(self.lat, self.lon, )
+        hourly_weather = {(weather.reference_time('iso'), weather.pressure['press']) for weather in one_call_history.forecast_hourly}
+        return hourly_weather
+
+    def _combine_forecast_history(self):
+        """Get and combine the forecast and history"""
+        history = self._get_history()
+        forecast = self._get_forecast()
+        combined = list(history.union(forecast))
+        return [(dateutil.parser.isoparse(pair[0]), pair[1]) for pair in combined]
+    
+    def plot_pressure(self):
+        """Plot the pressure over time."""
+        x = np.array([time for time, press in self._combine_forecast_history()])
+        y = np.array([press for time, press in self._combine_forecast_history()])
+        plt.scatter(x,y)
+        plt.show()
+
+
 # TEST: test the API works 
 # Coordinates for Seattle (lat, lon)
 coords = (47.6062,-122.3321)
 key = get_api_key("API.txt")
 
-#test_dict = mgr.one_call(lat = coords[0], lon = coords[1])
+print(*LocalWeather(key,coords).plot_pressure())
 
-print(LocalWeather(key, coords).lat)
+

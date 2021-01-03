@@ -6,7 +6,7 @@ to get historic/current/forcast data for the barometric pressure and humidity.
 from pyowm.owm import OWM
 import dateutil.parser
 import matplotlib.pyplot as plt
-import numpy as np
+import pandas as pd
 
 def get_api_key(filepath):
     """Read a local file with your API key."""
@@ -52,14 +52,14 @@ class LocalWeather:
         history = self._get_history()
         forecast = self._get_forecast()
         combined = list(history.union(forecast))
-        return [(dateutil.parser.isoparse(pair[0]), pair[1]) for pair in combined]
+        return [(dateutil.parser.isoparse(time), press) for time, press in combined]
     
     def plot_pressure(self):
         """Plot the pressure over time."""
-        x = np.array([time for time, press in self._combine_forecast_history()])
-        y = np.array([press for time, press in self._combine_forecast_history()])
-        plt.scatter(x,y)
+        combined_dataframe = pd.DataFrame(self._combine_forecast_history(), columns=['Time','Press'])
+        combined_dataframe.set_index('Time').plot()
         plt.show()
+
 
 
 # TEST: test the API works 
@@ -67,6 +67,6 @@ class LocalWeather:
 coords = (47.6062,-122.3321)
 key = get_api_key("API.txt")
 
-print(*LocalWeather(key,coords).plot_pressure())
+LocalWeather(key,coords).plot_pressure()
 
 

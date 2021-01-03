@@ -4,6 +4,8 @@ to get historic/current/forcast data for the barometric pressure and humidity.
 """
 
 from pyowm.owm import OWM
+from pyowm.utils import timestamps
+from datetime import datetime, timedelta, timezone
 import dateutil.parser
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -42,8 +44,10 @@ class LocalWeather:
     
     def _get_history(self):
         """Get the historic weather."""
+        # Get the historic data is a 48hr interval starting 48hrs ago.
+        two_day_epoch = int((datetime.now() - timedelta(hours=48)).replace(tzinfo=timezone.utc).timestamp())
         # Access the One-Call API history
-        one_call_history = self.mgr.one_call_history(self.lat, self.lon, )
+        one_call_history = self.mgr.one_call_history(self.lat, self.lon, dt=two_day_epoch)
         hourly_weather = {(weather.reference_time('iso'), weather.pressure['press']) for weather in one_call_history.forecast_hourly}
         return hourly_weather
 
